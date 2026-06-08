@@ -1,27 +1,22 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
-
+ 
 /**
- *
- * @author Sjaak Smetsers & Renske Smetsers-Weeda
- * @version 3.0 -- 20-01-2017
- */
+*
+* @author Sjaak Smetsers & Renske Smetsers-Weeda
+* @version 3.0 -- 20-01-2017
+*/
 public class MyDodo extends Dodo
 {
     private int myNrOfEggsHatched;
-
+ 
     public MyDodo() {
         super( EAST );
         myNrOfEggsHatched = 0;
     }
-
+ 
     public void act() {
-        
-    
-       move();
-      
-  
-
     }
+ 
     /**
      * Move one cell forward in the current direction.
      * 
@@ -30,36 +25,36 @@ public class MyDodo extends Dodo
      *
      */
     public void move() {
-        int MAXSTEPS = 40;
-        if ( onEgg() ) {
+        if ( canMove() ) {
+            step();
+        } else {
+            showError( "I'm stuck!" );
+        }
+    }
+    public void eggTrailToNest() {
+        while (!onNest()) {
+            if (onEgg()) {
             hatchEgg();
-        } else if ( eggAhead() && canMove() ) {
-            jump(MAXSTEPS);
-        }/* else if ( !eggAhead() ) {
-            turnLeft();         // gira hasta orientarte hacia el huevo
-        }*/else{
-            jump(MAXSTEPS);
+            } else if ((eggAhead() || nestAhead()) && canMove()) {
+                step();
+            } else {
+            turnRight();
+        }
         }
     }
     
-    public void turn180(){
-        turnLeft();
-        turnLeft();
-        
+    public void zoekNest() {
+        while (!onNest()) {
+        turnRight();
+        for (int i = 0; i < 4; i++) {
+            if (canMove()) {
+                move();
+                break;
+            }
+            turnLeft();
+        }
+        }
     }
-   
-     /*   public void isEgg(){
-        int x = getX();
-        int y = getY();
-        if ( checkEgg(x,   y-1) ) return turnRight();  // mira arriba
-        if ( checkEgg(x+1, y  ) ) return EAST;   // mira derecha
-        if ( checkEgg(x,   y+1) ) return SOUTH;  // mira abajo
-        if ( checkEgg(x-1, y  ) ) return WEST; 
-    
-    
-    }*/
-   
-   
     /**
      * Test if Dodo can move forward, (there are no obstructions
      *    or end of world in the cell in front of her).
@@ -74,11 +69,115 @@ public class MyDodo extends Dodo
     public boolean canMove() {
         if ( borderAhead() || fenceAhead() ){
             return false;
-        }else {
+        } else {
             return true;
         }
     }
+    public void walkToEndLayingEggsInEmptyNests() {
+    while (!borderAhead()) {
+        move();
+        if (onNest() && !onEgg()) {
+            layEgg();
+        }
+    }
+    }
     
+public void walkAroundFencedArea() {
+    while (!onEgg()) {
+        turnRight();
+        for (int i = 0; i < 4; i++) {
+            if (canMove()) {
+                move();
+                break;
+            }
+            turnLeft();
+        }
+    }
+    }
+
+ 
+    /**
+     * Mimi gaat over het hekje springen
+     */
+ 
+    public void climbOverFence(){
+        if(fenceAhead() && getDirection() == EAST){
+            setDirection(NORTH);
+            move();
+            setDirection(EAST);
+            move();
+            move();
+            setDirection(SOUTH);
+            move();
+            setDirection(EAST);
+        }
+        else if(fenceAhead() && getDirection() == WEST){
+            setDirection(NORTH);
+            move();
+            setDirection(WEST);
+            move();
+            move();
+            setDirection(SOUTH);
+            move();
+            setDirection(WEST);
+        }
+        else if(fenceAhead() && getDirection() == SOUTH){
+            setDirection(WEST);
+            move();
+            setDirection(SOUTH);
+            move();
+            move();
+            setDirection(EAST);
+            move();
+            setDirection(SOUTH);  
+        }
+    }
+ 
+     public void walkToWorldEdgeClimbingOverFences() {
+    while (!borderAhead()) {
+        if (fenceAhead()) {
+            climbOverFence();
+        } else {
+            move();
+        }
+        if (onNest()) {
+            layEgg();
+            break;
+        }
+    }
+    }
+    /**
+     * de grainaheadmethode
+     */
+ 
+    public boolean grainAhead(){
+        move();
+        if (onGrain() == true){
+            stepOneCellBackwards();
+            return true;
+        }
+        else {
+            setDirection(EAST);
+            move();
+            return false;
+        }
+    }
+    public void stepOneCellBackwards(){
+        turn180();
+        move();
+        turn180();
+    }
+ 
+    public void pickUpGrainsAndPrintCoordinates(){
+        while (!borderAhead()){
+            move();
+            if(onGrain()){
+                System.out.println(getX() + "," + getY());
+                pickUpGrain();
+            }
+        }
+    }
+ 
     /**
      * Hatches the egg in the current cell by removing
      * the egg from the cell.
@@ -91,11 +190,16 @@ public class MyDodo extends Dodo
         if ( onEgg() ) {
             pickUpEgg();
             myNrOfEggsHatched++;
-        } //else {
-           // showError( "There was no egg in this cell" );
-        //}
+        } else {
+            showError( "There was no egg in this cell" );
+        }
     }
-
+     public void faceEast(){
+        while(getDirection()!= EAST){
+        turnRight();
+        }
+          
+        }
     /**
      * Returns the number of eggs Dodo has hatched so far.
      * 
@@ -104,7 +208,7 @@ public class MyDodo extends Dodo
     public int getNrOfEggsHatched() {
         return myNrOfEggsHatched;
     }
-
+ 
     /**
      * Move given number of cells forward in the current direction.
      * 
@@ -115,15 +219,13 @@ public class MyDodo extends Dodo
      */
     public void jump( int distance ) {
         int nrStepsTaken = 0;               // set counter to 0
-        if ( nrStepsTaken < distance ) { // check if more steps must be taken  
-            step();                         // take a step
-            nrStepsTaken++;                 // increment the counter
-        }else{
-            showError("You have hit the maximum of 40 steps");
+        while ( nrStepsTaken < distance ) { // check if more steps must be taken  
+            move();                         // take a step
+            nrStepsTaken++;   
+            System.out.println("moved" + nrStepsTaken);// increment the counter
         }
     }
-
-    
+ 
     /**
      * Walks to edge of the world printing the coordinates at each step
      * 
@@ -131,14 +233,20 @@ public class MyDodo extends Dodo
      * <p> Final:   Dodo is on East side of world facing East.
      *              Coordinates of each cell printed in the console.
      */
-
+ 
     public void walkToWorldEdgePrintingCoordinates( ){
-        while( ! borderAhead() ){
-            // print coordinates
+        while( ! borderAhead() && canMove() ){
+            //System.out.println(getX() + "," + getY());
             move();
         }
     }
-
+ 
+    public void goBackToStartOfRowAndFaceBack(){
+        setDirection(WEST);
+        walkToWorldEdgePrintingCoordinates();
+        turn180();
+    }
+ 
     /**
      * Test if Dodo can lay an egg.
      *          (there is not already an egg in the cell)
@@ -150,13 +258,31 @@ public class MyDodo extends Dodo
      *                 false if Dodo can't lay an egg
      *                      (already an egg in the cell)
      */
-
-    /*public void canLayEgg( ){
-                if( onEgg() ){
-         
-                }else{
-                 layEgg();
-                }
-    }  
-    */
+ 
+    public boolean canLayEgg(){
+        if( onEgg() ){
+            return false;
+        }else{
+            return true;
+        }
+ 
+    }
+ 
+    public void gotoEgg()
+    {
+        while (!onEgg())
+        {
+            move();
+        }
+    }
+ 
+    /**
+     * dodo turns 180 degrees
+     */
+    public void turn180() {
+        if(getDirection()== WEST ){
+            setDirection(EAST);
+        }
+        else setDirection(WEST);
+    }
 }
