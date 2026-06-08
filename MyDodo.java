@@ -275,7 +275,49 @@ public void walkAroundFencedArea() {
             move();
         }
     }
+    
+    public int countEggsInRow() {
+    int count = 0;
+    if (onEgg()) {
+        count++;
+    }
+    while (canMove()) {
+        move();
+        if (onEgg()) {
+            count++;
+        }
+    }
+    goBackToStartOfRowAndFaceBack();
+    showCompliment("Er liggen " + count + " eieren in deze hier");
+    return count;
+    }
+    
+    public boolean validateCoordinates(int x, int y) {
+    return x >= 0 && x < getWorld().getWidth() && y >= 0 && y < getWorld().getHeight();
+    }
  
+    public void goToLocation(int locX, int locY) {
+    if (!validateCoordinates(locX, locY)) {
+        showError("Not Valid Cordinates My Friend! ");
+        return;
+    }
+    while (getX() != locX || getY() != locY) {
+        if (getX() < locX) {
+            setDirection(EAST);
+            move();
+        } else if (getX() > locX) {
+            setDirection(WEST);
+            move();
+        } else if (getY() < locY) {
+            setDirection(SOUTH);
+            move();
+        } else if (getY() > locY) {
+            setDirection(NORTH);
+            move();
+        }
+    }
+    }
+    
     /**
      * dodo turns 180 degrees
      */
